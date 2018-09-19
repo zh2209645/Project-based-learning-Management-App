@@ -28,34 +28,33 @@ auth = HTTPBasicAuth()
 CSRF_ENABLED = True
 app.debug = True
 
-class admin_user():
+
+# -------------------------- start classes ---------------------
+# --------------------------- user model -----------------------
+class user:
     user_id = None
-    password = None
+    __password = None
     name = None
     email = None
-    user_type = None
-    photo_addr = None
+    photo = None
 
-    def __init__(self, user_profile = dict()):
-        self.load_from_dict(user_profile)
+    def __init__(self, user_profile=None):
+        if user_profile is not None:
+            self.load_from_dict(user_profile)
 
     def load_from_dict(self, user_profile):
         self.user_id = user_profile["user_id"]
-        self.password = user_profile.get("password", "None")
+        self.__password = self.hash_password(
+            user_profile.get("passwd", "None"))
         self.name = user_profile.get("name", self.user_id)
         self.email = user_profile.get("email", "None")
-        self.user_type = user_profile.get("type", "None")
-        self.photo_addr = user_profile.get("photo", "None")
+        self.photo = user_profile.get("photo", "None")
 
     def hash_password(self, password):
         self.password = custom_app_context.encrypt(password)
 
     def verify_password(self, password):
         return custom_app_context.verify(password, self.password)
-
-    def generate_auth_token(self, expiration=600):
-        s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
-        return s.dumps({'id': self.user_id})
 
     @staticmethod
     def verify_auth_token(token):
@@ -66,16 +65,51 @@ class admin_user():
             return None  # valid token, but expired
         except BadSignature:
             return None  # invalid token
-        admin = admin_user(db.get_admin_user(data['id'])[0])
-        return admin
+        if data["user_type"] != "admin":
+            admin = admin_user(db.get_admin_user(data['id'])[0])
+            return admin
+        elif data["user_type"] != "student":
+            student = student_user(db.get_student_user(data['id'])[0])
+            return student
 
+
+class admin_user(user):
+    user_type = None
+
+    def __init__(self, user_profile=None):
+        user.__init__(self, user_profile)
+        self.set_admin_type(user_profile.get("type", 0))
+
+    def set_admin_type(self, user_type):
+        self.user_type = user_type
+
+    def generate_auth_token(self, expiration=600):
+        s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
+        return s.dumps({'id': self.user_id, 'user_type': "admin", 'type': self.user_type})
+
+
+class student_user(user):
+    mark = None
+
+    def __init__(self, user_profile=None):
+        user.__init__(self, user_profile)
+        self.set_student_mark(user_profile.get("mark", "None"))
+
+    def set_student_mark(self, mark):
+        self.mark = mark
+
+    def generate_auth_token(self, expiration=600):
+        s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
+        return s.dumps({'id': self.user_id, 'user_type': "student"})
+
+# TODO
 @auth.verify_password
 def verify_password(name_or_token, password):
     if not name_or_token:
         return False
     name_or_token = re.sub(r'^"|"$', '', name_or_token)
-    admin = admin_user.verify_auth_token(name_or_token)
-    if not admin:
+    temp_user = user.verify_auth_token(name_or_token)
+    if not temp_user:
         admin = admin_user(db.get_admin_user(name_or_token)[0])
         # if not admin or not admin.verify_password(password):
         #     return False
@@ -92,6 +126,7 @@ def test():
     print(token1)
     # print(admin_user.verify_auth_token('test2'))
     return jsonify(result[0])
+
 
 @app.route('/api/test2', methods=['GET'])
 @auth.login_required
