@@ -34,7 +34,7 @@ def get_admin_user(user_id):
     result = convert_result_to_dict(result, key_list, True)
     return result
 
-def check_admin_passwd(user_id, passwd):
+def get_admin_passwd(user_id):
     dbconfig = {"dbname": "comp9323"}
     database_object = database_lib.Database_object(dbconfig)
     database_object.open()
@@ -43,10 +43,7 @@ def check_admin_passwd(user_id, passwd):
     database_object.close()
     key_list = ["user_id", "passwd", "name", "email", "type", "photo"]
     result = convert_result_to_dict(result, key_list)
-    if result[0]["passwd"] == passwd:
-        return True
-    else:
-        return False
+    return result[0]["passwd"]
 
 def change_admin_user_info(user_id, field, new_data):
     dbconfig = {"dbname": "comp9323"}
@@ -59,7 +56,7 @@ def change_admin_user_info(user_id, field, new_data):
 def change_admin_passwd(user_id, new_passwd):
     change_admin_user_info(user_id, "password", new_passwd)
 
-def chagne_admin_name(user_id, new_name):
+def change_admin_name(user_id, new_name):
     change_admin_user_info(user_id, "name", new_name)
 
 def change_admin_email(user_id, new_email):
@@ -108,7 +105,7 @@ def get_student_user(user_id):
     result = convert_result_to_dict(result, key_list, True)
     return result
 
-def check_student_passwd(user_id, passwd):
+def get_student_passwd(user_id):
     dbconfig = {"dbname": "comp9323"}
     database_object = database_lib.Database_object(dbconfig)
     database_object.open()
@@ -117,10 +114,7 @@ def check_student_passwd(user_id, passwd):
     database_object.close()
     key_list = ["user_id", "passwd", "name", "email", "type", "photo"]
     result = convert_result_to_dict(result, key_list)
-    if result[0]["passwd"] == passwd:
-        return True
-    else:
-        return False
+    return result[0]["passwd"]
 
 def change_student_info(user_id, field, new_data):
     dbconfig = {"dbname": "comp9323"}
@@ -130,7 +124,7 @@ def change_student_info(user_id, field, new_data):
     database_object.update(sql)
     database_object.close()
 
-def chagne_student_passwd(user_id, new_passwd):
+def change_student_passwd(user_id, new_passwd):
     change_student_info(user_id, "password", new_passwd)
 
 def change_student_name(user_id, new_name):
